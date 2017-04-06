@@ -1,0 +1,42 @@
+#!/usr/bin/python2.7
+from os import system
+from operator import eq
+import commands
+import socket
+import sys
+import re
+import time
+import threading
+
+HOST = "192.168.0.2"
+PORT = 8901
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('',PORT))
+
+netInfo = commands.getoutput('ifconfig wlan1 | grep HWaddr | cut -c 39-55')
+print(netInfo)
+sock.sendto("I=" + netInfo, (HOST,PORT))
+
+class receiving(threading.Thread):
+	def run(self):
+		while True:
+			try:
+				data, addr = sock.recvfrom(1024)
+				type = data[0]
+				if eq(type, "R"):
+					pathList = data[3:len(data)-1].split(',')
+					for ip in pathList:
+						print("R = " + ip)
+				elif eq(type, "W"):
+					warnList = data[3:len(data)-1].split(',')
+					for ip in warnList:
+						print("W = " + ip)
+				else:
+					print("Message type ERROR")
+			except KeyboardInterrupt:
+				sys.exit()
+
+recv = receiving()
+
+recv.start()

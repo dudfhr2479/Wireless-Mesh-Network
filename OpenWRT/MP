@@ -1,0 +1,89 @@
+#!/usr/bin/python2.7
+from os import system
+from operator import eq
+import commands
+import socket
+import sys
+import re
+import time
+import threading
+
+HOST = "192.168.0.2"
+PORT = 8901
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('',PORT))
+
+#aaa = str('192.168.0.19')
+#system("ip rule add from '%s' priority 10 table main" %(aaa))
+
+period = 0
+
+class sending(threading.Thread):
+	def run(self):
+		f = open("/sys/class/net/wlan0/statistics/rx_bytes",'r')
+		filedata = str(f.readlines())
+		BYTE = int(re.findall('\d+', filedata)[0])
+		BYTE1 = BYTE
+
+		period = 0
+		netInfo = commands.getoutput('ifconfig wlan1 | grep HWaddr | cut -c 39-55')
+		print(netInfo)
+		sock.sendto("I=" + netInfo, (HOST,PORT))
+
+		while True:
+			try:
+				time.sleep(0.5)
+				f = open("/sys/class/net/wlan0/statistics/rx_bytes",'r')
+				filedata = str(f.readlines())
+				BYTE1 = int(re.findall('\d+', filedata)[0])
+				differ = BYTE1 - BYTE
+				BYTE = BYTE1
+				period += 1
+
+				if differ > 15000:
+					sock.sendto("T=" + `differ`, (HOST,PORT))
+					print(differ)
+
+				if period == 10:
+					system("iw dev wlan0 station dump | grep Station | cut -c 9-26 > sta.out")
+					system("iw dev wlan1 station dump | grep Station | cut -c 9-26 > mesh.out")
+					staFile = open("sta.out", 'r')
+					meshFile = open("mesh.out", 'r')
+					stadata = staFile.readlines()
+					meshdata = meshFile.readlines()
+					STA = len(stadata)
+					sock.sendto("S=" + `STA`, (HOST,PORT))
+					sock.sendto("R=" + ",".join(meshdata), (HOST,PORT))
+					period = 0
+
+			except KeyboardInterrupt:
+				sys.exit()
+
+class receiving(threading.Thread):
+	def run(self):
+		while True:
+			try:
+				data, addr = sock.recvfrom(1024)
+				type = data[0]
+				if eq(type, "R"):
+					pathList = data[3:len(data)-1].split(',')
+					for ip in pathList:
+#						system("ip rule del from '%s'" %(ip))
+#						system("ip rule add from '%s'" %(ip))
+						print("R = " + ip)
+				elif eq(type, "W"):
+					warnList = data[3:len(data)-1].split(',')
+					for ip in warnList:
+#						system("ip rule del from '%s'" %(ip))
+						print("W = " + ip)
+				else:
+					print("Message type ERROR")
+			except KeyboardInterrupt:
+				sys.exit()
+
+send = sending()
+recv = receiving()
+
+send.start()
+recv.start()
