@@ -14,9 +14,6 @@ PORT = 8901
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('',PORT))
 
-#aaa = str('192.168.0.19')
-#system("ip rule add from '%s' priority 10 table main" %(aaa))
-
 period = 0
 
 class sending(threading.Thread):
@@ -69,13 +66,13 @@ class receiving(threading.Thread):
 				if eq(type, "R"):
 					pathList = data[3:len(data)-1].split(',')
 					for ip in pathList:
-#						system("ip rule del from '%s'" %(ip))
-#						system("ip rule add from '%s'" %(ip))
+						system("ip rule del from '%s'" %(ip))
+						system("ip rule add from '%s'" %(ip))
 						print("R = " + ip)
 				elif eq(type, "W"):
 					warnList = data[3:len(data)-1].split(',')
 					for ip in warnList:
-#						system("ip rule del from '%s'" %(ip))
+						system("ip rule del from '%s'" %(ip))
 						print("W = " + ip)
 				else:
 					print("Message type ERROR")
