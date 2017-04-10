@@ -102,14 +102,21 @@ public class MeshInstaller {
         String keyInput;
         Boolean loop = true;
 
+        //receive command
         while(loop){
             keyInput = input.next();
             switch (keyInput){
                 case "q":
+                    //Quit loop
                     loop = false;
                     break;
                 case "l":
+                    //Show MAC-IP table
                     CLILog("MACIPlist\n" + macIPList.toString());
+                    break;
+                case "o":
+                    //Show overtraffic MP(IP)
+                    CLILog("Overtraffic list\n" + overTrafficList.toString());
                     break;
                 default:
                     CLILog("Command ERROR");
@@ -162,13 +169,18 @@ public class MeshInstaller {
             int value = overTrafficList.get(key);
 
             if(value != 0){
-                overTrafficList.put(key, value - 1);
+                if(value > 10){
+                    overTrafficList.put(key, value - 10);
+                }else{
+                    overTrafficList.put(key, value - 1);
+                }
             }else{
                 overTrafficList.remove(key);
             }
         }
     }
 
+    //Calculate routing path
     private void routeChange(){
         Iterator<String> keySet = overTrafficList.keySet().iterator();
         ArrayList<String> warningList = new ArrayList<String>();
@@ -189,10 +201,12 @@ public class MeshInstaller {
         }
     }
 
+    //Add MAC-IP list
     private void addNetInfo(String address, String data){
         macIPList.put(data, address);
     }
 
+    //Convert MAC - IP & send info
     private void macToIP(String address, String data){
         String[] list = data.split(",");
         ArrayList<String> sendList = new ArrayList<>();
@@ -208,6 +222,7 @@ public class MeshInstaller {
         }
     }
 
+    //Send message to MP
     private void sendMsg(String type, String msg, String address){
         try {
             String str = type + "=" + msg;
